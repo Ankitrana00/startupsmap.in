@@ -1,0 +1,7 @@
+# Codeowners
+/* @ncrstartupmap/core-team
+/app /** @ncrstartupmap/frontend-team
+/components/** @ncrstartupmap/frontend-team
+/lib/** @ncrstartupmap/backend-team
+/tests/** @ncrstartupmap/test-team
+/docs/** @ncrstartupmap/docs-team

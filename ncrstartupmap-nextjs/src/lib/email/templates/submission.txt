@@ -1,0 +1,11 @@
+Submission Received
+==================
+
+Dear User,
+
+Thank you for submitting {{startup_name}} to StartupsMap.in.
+
+We will review your submission and get back to you within 2-3 business days.
+
+Best regards,
+StartupsMap.in Team

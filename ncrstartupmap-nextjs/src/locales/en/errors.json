@@ -1,0 +1,25 @@
+{
+  "validation": {
+    "required": "This field is required",
+    "minLength": "Must be at least {{min}} characters",
+    "maxLength": "Must be at most {{max}} characters",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidUrl": "Please enter a valid URL",
+    "invalidNumber": "Please enter a valid number"
+  },
+  "network": {
+    "offline": "You are offline. Please check your internet connection.",
+    "timeout": "Request timed out. Please try again.",
+    "serverError": "Server error. Please try again later."
+  },
+  "auth": {
+    "unauthorized": "You are not authorized to perform this action.",
+    "forbidden": "Access denied.",
+    "sessionExpired": "Your session has expired. Please log in again."
+  },
+  "api": {
+    "notFound": "Resource not found.",
+    "alreadyExists": "Resource already exists.",
+    "conflict": "Conflict detected."
+  }
+}

@@ -1,0 +1,15 @@
+---------------------
+StartupsMap.in Security
+---------------------
+
+Contact: mailto:security@startupsmap.in
+Expires: 2025-01-01T00:00:00Z
+Preferred-Languages: en
+Canonical: https://startupsmap.in/.well-known/security.txt
+PGP: https://startupsmap.in/.well-known/security.txt.asc
+
+Policy: https://startupsmap.in/security-policy
+Acknowledgments: https://startupsmap.in/security/acknowledgments
+Signing: https://startupsmap.in/.well-known/security-signing-key.asc
+
+Thank you for helping keep StartupsMap.in secure.

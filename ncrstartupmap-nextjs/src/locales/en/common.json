@@ -1,0 +1,53 @@
+{
+  "app": {
+    "title": "StartupsMap.in",
+    "description": "Explore startups across Delhi NCR"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "submit": "Submit Startup",
+    "jobs": "Jobs",
+    "admin": "Admin"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "more": "More"
+  },
+  "startups": {
+    "title": "Startups",
+    "description": "Startup Description",
+    "sector": "Sector",
+    "stage": "Stage",
+    "area": "Area",
+    "founded": "Founded",
+    "hiring": "Hiring",
+    "not-hiring": "Not Hiring",
+    "unconfirmed": "Unconfirmed",
+    "website": "Website",
+    "linkedin": "LinkedIn"
+  },
+  "error": {
+    "404": "Page Not Found",
+    "404Description": "The page you are looking for does not exist.",
+    "500": "Server Error",
+    "500Description": "Something went wrong on our end. Please try again later.",
+    "backHome": "Back to Home"
+  }
+}

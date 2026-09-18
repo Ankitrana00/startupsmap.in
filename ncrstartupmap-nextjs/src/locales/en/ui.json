@@ -1,0 +1,51 @@
+{
+  "buttons": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View Details",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Go Back",
+    "next": "Next",
+    "previous": "Previous",
+    "filter": "Apply Filters",
+    "reset": "Reset Filters",
+    "search": "Search",
+    "loadMore": "Load More",
+    "showLess": "Show Less"
+  },
+  "labels": {
+    "name": "Name",
+    "description": "Description",
+    "email": "Email",
+    "password": "Password",
+    "area": "Area",
+    "sector": "Sector",
+    "stage": "Stage",
+    "website": "Website",
+    "linkedin": "LinkedIn",
+    "location": "Location",
+    "date": "Date",
+    "time": "Time",
+    "status": "Status"
+  },
+  "placeholders": {
+    "search": "Search startups...",
+    "name": "Enter startup name",
+    "description": "Describe your startup",
+    "email": "Enter your email",
+    "password": "Enter your password"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "success": "Operation successful",
+    "error": "Something went wrong",
+    "confirmDelete": "Are you sure you want to delete this item?",
+    "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?",
+    "saved": "Changes saved successfully"
+  }
+}

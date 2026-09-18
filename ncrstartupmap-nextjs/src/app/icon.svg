@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b0b12" />
+      <stop offset="0.5" stop-color="#1e1b4b" />
+      <stop offset="1" stop-color="#065f46" />
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.25" />
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#tile)" />
+  <rect width="64" height="64" rx="14" fill="url(#gloss)" />
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="1.5" />
+  <g transform="translate(32 32.5) scale(1.6) translate(-12 -12)" fill="none" stroke="#f5d67b" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+    <circle cx="12" cy="10" r="3" />
+  </g>
+</svg>

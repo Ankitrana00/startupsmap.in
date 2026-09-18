@@ -1,0 +1,46 @@
+{
+  "app": {
+    "title": "NCR स्टार्टअप मैप",
+    "description": "दिल्ली NCR में स्टार्टअप्स की खोज करें"
+  },
+  "navigation": {
+    "home": "होम",
+    "dashboard": "डैशबोर्ड",
+    "submit": "स्टार्टअप सबमिट करें",
+    "jobs": "नौकरियां",
+    "admin": "प्रशासन"
+  },
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "success": "सफल",
+    "cancel": "रद्द करें",
+    "confirm": "पुष्टि करें",
+    "save": "सहेजें",
+    "delete": "मिटाएं",
+    "edit": "संपादित करें",
+    "view": "देखें",
+    "search": "खोजें",
+    "filter": "फ़िल्टर",
+    "reset": "रीसेट",
+    "submit": "सबमिट करें",
+    "back": "वापस",
+    "next": "अगला",
+    "previous": "पिछला",
+    "close": "बंद करें",
+    "more": "और"
+  },
+  "startups": {
+    "title": "स्टार्टअप्स",
+    "description": "स्टार्टअप विवरण",
+    "sector": "क्षेत्र",
+    "stage": "चरण",
+    "area": "क्षेत्र",
+    "founded": "स्थापना",
+    "hiring": "भर्ती",
+    "not-hiring": "न तो भर्ती",
+    "unconfirmed": "असत्यपित",
+    "website": "वेबसाइट",
+    "linkedin": "लिंक्डइन"
+  }
+}

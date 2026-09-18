@@ -1,0 +1,63 @@
+import type { Startup } from "@/lib/types/startup";
+
+export const mockStartups: Startup[] = [
+  {
+    id: "s-001",
+    name: "Zepwell",
+    description: "10-minute pharmacy delivery across Gurugram micro-hubs.",
+    sector: "Healthtech",
+    stage: "Series A",
+    area: "Gurugram",
+    founded: 2021,
+    is_hiring: true,
+    lat: 28.4595,
+    lng: 77.0266,
+    website: "https://example.com/zepwell",
+    linkedin: "https://linkedin.com/company/zepwell",
+  },
+  {
+    id: "s-002",
+    name: "Cred Ledger",
+    description: "Credit underwriting APIs for India's tier-2 lenders.",
+    sector: "Fintech",
+    stage: "Seed",
+    area: "Noida",
+    founded: 2022,
+    is_hiring: true,
+    lat: 28.5355,
+    lng: 77.391,
+    website: "https://example.com/credledger",
+    linkedin: null,
+  },
+  {
+    id: "s-003",
+    name: "Bhoomi Labs",
+    description: "Satellite crop analytics for agri lenders and insurers.",
+    sector: "Agritech",
+    stage: "Series B",
+    area: "Delhi",
+    founded: 2019,
+    is_hiring: false,
+    lat: 28.6139,
+    lng: 77.209,
+    website: "https://example.com/bhoomi",
+    linkedin: "https://linkedin.com/company/bhoomi-labs",
+  },
+];
+
+export const mockUnmappedStartups = [
+  {
+    id: "s-017",
+    name: "Chaupal Commerce",
+    description: "Rural retail aggregation with assisted ordering.",
+    sector: "D2C",
+    stage: "Seed",
+    area: "Sonipat",
+    founded: 2023,
+    is_hiring: true,
+    lat: null,
+    lng: null,
+    website: "https://example.com/chaupal",
+    linkedin: null,
+  },
+];

@@ -15,147 +15,108 @@ export const contentType = "image/png";
 const SITE_NAME = "StartupsMap.in";
 const TAGLINE = "Discover Startups Across Delhi NCR";
 
-const BRAND_TILE_WIDTH = 320;
-const BRAND_TILE_HEIGHT = 320;
+export const alt = "StartupsMap.in — Discover Startups Across Delhi NCR";
 
-function pinPath(accent: string) {
+const BRAND_TILE = 320;
+
+const ACCENT = "#f5d67b";
+const TEXT_COLOR = "#f5f5f5";
+const SUBTLE_COLOR = "#cbd5e1";
+
+// Satori (the renderer behind ImageResponse) supports inline SVG *shapes* but
+// throws on SVG <text>: "<text> nodes are not currently supported, please
+// convert them to <path>". That error aborted `next build` while prerendering
+// this route, so every label below is an HTML <div> styled with CSS instead.
+// Only the pin glyph stays as inline SVG, and it contains shapes exclusively.
+function PinGlyph({ px, opacity = 1 }: { px: number; opacity?: number }) {
   return (
-    <g
-      transform={`translate(${BRAND_TILE_WIDTH / 2} ${BRAND_TILE_HEIGHT / 2} -12 -12) scale(6) translate(-12 -12)`}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={px}
+      height={px}
+      viewBox="0 0 24 24"
       fill="none"
-      stroke={accent}
-      strokeWidth={2.25}
+      stroke={ACCENT}
+      strokeWidth={1.6}
       strokeLinecap="round"
       strokeLinejoin="round"
+      opacity={opacity}
     >
       <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
       <circle cx={12} cy={10} r={3} />
-    </g>
-  );
-}
-
-function brandTile(accent: string, tileTop: string, tileMid: string, tileBot: string) {
-  const w = BRAND_TILE_WIDTH;
-  const h = BRAND_TILE_HEIGHT;
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={w}
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      style={{ display: "block" }}
-    >
-      <defs>
-        <linearGradient id="tile" x1={0} y1={0} x2={w} y2={h} gradientUnits="userSpaceOnUse">
-          <stop offset={0} stopColor={tileTop} />
-          <stop offset={0.5} stopColor={tileMid} />
-          <stop offset={1} stopColor={tileBot} />
-        </linearGradient>
-        <linearGradient id="gloss" x1={0} y1={0} x2={0} y2={h} gradientUnits="userSpaceOnUse">
-          <stop offset={0} stopColor="#ffffff" stopOpacity={0.25} />
-          <stop offset={0.5} stopColor="#ffffff" stopOpacity={0.1} />
-          <stop offset={1} stopColor="#ffffff" stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <rect width={w} height={h} rx={28} fill="url(#tile)" />
-      <rect width={w} height={h} rx={28} fill="url(#gloss)" />
-      <rect x={3} y={3} width={w - 6} height={h - 6} rx={25} fill="none" stroke="#ffffff" strokeOpacity={0.2} strokeWidth={3} />
-      {pinPath(accent)}
     </svg>
   );
 }
 
-export default async function ImageSVG() {
-  const accent = "#f5d67b";
-  const tileTop = "#0b0b12";
-  const tileMid = "#1e1b4b";
-  const tileBot = "#065f46";
-  const textColor = "#f5f5f5";
-  const subColor = "#cbd5e1";
-  const bgTop = "#0b0b12";
-  const bgBot = "#064e3b";
-
-  const layout = (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={1200}
-      height={630}
-      viewBox="0 0 1200 630"
-      style={{ display: "block" }}
-    >
-      <defs>
-        <linearGradient id="bg" x1={0} y1={0} x2={1200} y2={630} gradientUnits="userSpaceOnUse">
-          <stop offset={0} stopColor={bgTop} />
-          <stop offset={1} stopColor={bgBot} />
-        </linearGradient>
-      </defs>
-      <rect width={1200} height={630} fill="url(#bg)" />
-
-      {/* brand tile, left, vertically centered */}
-      <g transform="translate(60 155)">
-        {brandTile(accent, tileTop, tileMid, tileBot)}
-      </g>
-
-      {/* title */}
-      <text
-        x={430}
-        y={230}
-        fontFamily="Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-        fontSize={72}
-        fontWeight={700}
-        fill={textColor}
-        letterSpacing={-1}
+export default async function OpengraphImage() {
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          display: "flex",
+          width: "100%",
+          height: "100%",
+          alignItems: "center",
+          padding: "0 60px",
+          // Satori has no SVG gradients here — CSS gradients render natively.
+          background: "linear-gradient(135deg, #0b0b12 0%, #064e3b 100%)",
+        }}
       >
-        {SITE_NAME}
-      </text>
+        {/* brand tile — same gradient/radius/gloss as src/app/icon.svg */}
+        <div
+          style={{
+            display: "flex",
+            width: BRAND_TILE,
+            height: BRAND_TILE,
+            flexShrink: 0,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 28,
+            border: "3px solid rgba(255, 255, 255, 0.2)",
+            background: "linear-gradient(160deg, #0b0b12 0%, #1e1b4b 50%, #065f46 100%)",
+          }}
+        >
+          <PinGlyph px={150} />
+        </div>
 
-      {/* tagline */}
-      <text
-        x={430}
-        y={310}
-        fontFamily="Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-        fontSize={40}
-        fontWeight={400}
-        fill={subColor}
-      >
-        {TAGLINE}
-      </text>
-
-      {/* meta row */}
-      <text
-        x={430}
-        y={370}
-        fontFamily="Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-        fontSize={22}
-        fontWeight={500}
-        fill={accent}
-        letterSpacing={1.5}
-      >
-        INTERACTIVE MAP · FILTERS · DELHI NCR
-      </text>
-
-      {/* accent line */}
-      <rect x={430} y={400} width={380} height={6} rx={3} fill={accent} />
-
-      {/* small pin accent bottom-right */}
-      <g
-        transform="translate(1080 540) scale(1.6)"
-        fill="none"
-        stroke={accent}
-        strokeWidth={2.25}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={0.85}
-      >
-        <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
-        <circle cx={12} cy={10} r={3} />
-      </g>
-    </svg>
+        {/* copy column */}
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, marginLeft: 50 }}>
+          <div
+            style={{
+              fontSize: 72,
+              fontWeight: 700,
+              color: TEXT_COLOR,
+              letterSpacing: -1,
+              lineHeight: 1.1,
+            }}
+          >
+            {SITE_NAME}
+          </div>
+          <div style={{ fontSize: 40, color: SUBTLE_COLOR, marginTop: 18 }}>{TAGLINE}</div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 500,
+              color: ACCENT,
+              letterSpacing: 1.5,
+              marginTop: 26,
+            }}
+          >
+            INTERACTIVE MAP · FILTERS · DELHI NCR
+          </div>
+          <div
+            style={{
+              width: 380,
+              height: 6,
+              borderRadius: 3,
+              background: ACCENT,
+              marginTop: 30,
+            }}
+          />
+        </div>
+      </div>
+    ),
+    { ...size },
   );
-
-  return new ImageResponse(layout, {
-    width: 1200,
-    height: 630,
-  });
 }
 

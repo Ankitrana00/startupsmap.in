@@ -1,0 +1,473 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * StartupsMap.in — design system.
+ * "Porcelain glass" palette: soft warm-grey page, frosted white surfaces,
+ * near-black text and actions, plus three status signals
+ * (green = hiring, indigo = not hiring, cyan = not confirmed).
+ * All colors are semantic tokens. Never hardcode colors in components.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+
+  --color-background: var(--background);
+  --color-background-soft: var(--background-soft);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-solid: var(--surface-solid);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-action: var(--action);
+  --color-action-foreground: var(--action-foreground);
+  --color-idle: var(--idle);
+  --color-warn: var(--warn);
+  --color-error: var(--error);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-divider: var(--divider);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-panel: 0 10px 30px -14px rgba(31, 33, 32, 0.16), 0 2px 8px rgba(31, 33, 32, 0.09);
+  --shadow-panel-hover: 0 18px 40px -16px rgba(31, 33, 32, 0.22), 0 3px 10px rgba(31, 33, 32, 0.16);
+  --shadow-marker: 0 2px 6px rgba(31, 33, 32, 0.28);
+}
+
+:root {
+  --radius: 0.875rem;
+
+  /* M4a: let native UI (scrollbars, form controls, autofill) follow the theme. */
+  color-scheme: light;
+
+  /* Mobile shell geometry — single source of truth for MobileToolbar, the
+     mobile view layer (DashboardContent), FilterTray and MobileCountBadge.
+     Every offset below the toolbar is derived from these two values, so a
+     change here moves the whole shell together. Never hardcode 8/100/106/120/130.
+
+     --mobile-toolbar-min-h must equal the compact toolbar's real height:
+     40px (row 1: brand / Filters pill / Submit) + 8px gap
+     + 40px (row 2: view toggle) + 8px pt + 8px pb = 104px content
+     + 2px panel border = 106px. */
+  --mobile-toolbar-top: 8px;
+  --mobile-toolbar-min-h: 106px;
+
+  /* Page */
+  --background: #f3f4f3;
+  --background-soft: #f7f7f6;
+  --foreground: #1f2120;
+
+  /* Frosted glass surfaces */
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-raised: rgba(255, 255, 255, 0.92);
+  --surface-solid: #ffffff;
+  --card: rgba(255, 255, 255, 0.78);
+  --card-foreground: #1f2120;
+  --popover: rgba(255, 255, 255, 0.94);
+  --popover-foreground: #1f2120;
+
+  /* Text */
+  --secondary: #e8ebe9;
+  --secondary-foreground: #1f2120;
+  --muted: #eceeeb;
+  --muted-foreground: #6b6e6b;
+  --subtle-foreground: #9a9f9b;
+
+  /* Actions / controls */
+  --primary: #303330;
+  --primary-foreground: #f7f7f6;
+  --action: #10b981;
+  --action-foreground: #ffffff;
+  --idle: #6366f1;
+  --accent: #06b6d4;
+  --accent-foreground: #ffffff;
+  --warn: #d97706;
+  --error: #dc2626;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  /* Lines */
+  --border: rgba(190, 194, 191, 0.46);
+  --border-strong: rgba(95, 99, 96, 0.34);
+  --divider: rgba(31, 33, 32, 0.1);
+  --input: rgba(190, 194, 191, 0.62);
+  --ring: rgba(48, 51, 48, 0.28);
+}
+
+/* Hide the browser-native search clear button (Chrome/Safari add their own
+   X for type="search"). SearchBox renders a single custom clear button so
+   users always see exactly one consistent affordance. */
+.no-native-search-clear::-webkit-search-cancel-button {
+  display: none;
+}
+.no-native-search-clear::-webkit-search-decoration {
+  display: none;
+}
+.no-native-search-clear::-ms-clear {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility panel {
+  background-color: var(--color-surface-solid);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+
+  @supports (backdrop-filter: blur(1px)) {
+    background-color: var(--color-surface);
+    backdrop-filter: blur(18px) saturate(1.4);
+  }
+}
+
+@utility grid-backdrop {
+  background-image:
+    linear-gradient(to right, rgba(31, 33, 32, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(31, 33, 32, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Glassmorphism card — reusable frosted panel for new features. */
+@utility glass-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: blur(18px) saturate(1.4);
+  }
+}
+
+/* Glassmorphism modal — raised frosted surface for overlays. */
+@utility glass-modal {
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 24px 48px -16px rgba(31, 33, 32, 0.3);
+
+  @supports (backdrop-filter: blur(1px)) {
+    backdrop-filter: blur(20px) saturate(1.5);
+  }
+}
+
+/* Leaflet surface theming — keeps the map inside the design system. */
+.leaflet-container {
+  background: var(--color-background-soft);
+  font-family: var(--font-sans);
+}
+
+.leaflet-tile-pane {
+  filter: grayscale(0.34) brightness(1.04) contrast(0.94) saturate(0.82);
+}
+
+.leaflet-bar,
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--color-surface-solid);
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-panel);
+}
+
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: var(--color-surface-solid);
+  color: var(--color-foreground);
+  border-bottom-color: var(--color-border);
+}
+
+.leaflet-popup-content {
+  margin: 1rem;
+  width: 280px;
+  max-width: calc(100vw - 48px);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.leaflet-popup-close-button {
+  color: var(--color-subtle-foreground) !important;
+}
+
+.leaflet-control-attribution {
+  background: var(--color-surface-raised) !important;
+  color: var(--color-subtle-foreground) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--color-muted-foreground) !important;
+}
+
+/* The mobile map layer starts BELOW the fixed toolbar, whose box is
+   var(--mobile-toolbar-top) + var(--mobile-toolbar-min-h) tall (see :root), so
+   Leaflet's zoom control only needs its default small inset inside the map. */
+@media (max-width: 767px) {
+  .leaflet-top.leaflet-left {
+    top: 10px;
+  }
+}
+
+/* Filter tray enter motion — instant snap when the user prefers reduced
+   motion (the tray unmounts on close, so exit is always instant). */
+@media (prefers-reduced-motion: no-preference) {
+  .filter-tray-enter {
+    animation: filter-tray-in 180ms ease-out;
+  }
+
+  @keyframes filter-tray-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.startup-marker {
+  border-radius: 9999px;
+  border: 3px solid #ffffff;
+  box-shadow: var(--shadow-marker);
+}
+
+/* Expand touch target without changing visual size */
+.startup-marker::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+}
+
+.startup-marker--hiring {
+  background: var(--color-action);
+}
+
+.startup-marker--not-hiring {
+  background: var(--color-idle);
+}
+
+.startup-marker--unconfirmed {
+  background: var(--color-accent);
+}
+
+.popup-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* Keep clear of Leaflet's top-right × close button. */
+  padding-right: 1rem;
+}
+
+.popup-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+}
+
+.popup-title {
+  flex: 1 1 auto;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: var(--color-foreground);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popup-desc {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  color: var(--color-muted-foreground);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.popup-tags {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.popup-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+  white-space: nowrap;
+}
+
+/* Translucent tones — mirror Badge.tsx hiring/accent variants. */
+.popup-tag--hiring {
+  border-color: color-mix(in srgb, var(--color-action) 40%, transparent);
+  background: color-mix(in srgb, var(--color-action) 15%, transparent);
+  color: var(--color-action);
+}
+
+.popup-tag--unconfirmed {
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
+}
+
+.popup-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+  margin-top: 1rem;
+}
+
+.popup-area {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popup-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.popup-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* M6: 2.5rem (40px) — the popup's icon actions were 2rem (32px), under the
+     44px touch guideline; 40px + the surrounding popup padding clears it. */
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.375rem;
+  border-radius: var(--radius-md);
+  color: var(--color-muted-foreground);
+  text-decoration: none;
+}
+
+.popup-icon-btn:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-primary);
+}
+
+.popup-link {
+  display: inline-block;
+  margin-top: 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Dark mode overrides for glassmorphism surfaces. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #1a1b1a;
+  --background-soft: #1e1f1e;
+  --foreground: #e8ebe9;
+
+  --surface: rgba(38, 40, 38, 0.78);
+  --surface-raised: rgba(44, 46, 44, 0.92);
+  --surface-solid: #262826;
+  --card: rgba(38, 40, 38, 0.78);
+  --card-foreground: #e8ebe9;
+  --popover: rgba(44, 46, 44, 0.94);
+  --popover-foreground: #e8ebe9;
+
+  --secondary: #2a2c2a;
+  --secondary-foreground: #e8ebe9;
+  --muted: #2a2c2a;
+  --muted-foreground: #a0a39f;
+  --subtle-foreground: #7a7d79;
+
+  --primary: #e8ebe9;
+  --primary-foreground: #1a1b1a;
+
+  --border: rgba(120, 124, 120, 0.3);
+  --border-strong: rgba(160, 164, 160, 0.4);
+  --divider: rgba(232, 235, 233, 0.12);
+  --input: rgba(120, 124, 120, 0.5);
+  --ring: rgba(232, 235, 233, 0.28);
+}
+

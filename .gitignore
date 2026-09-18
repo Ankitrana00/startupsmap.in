@@ -1,0 +1,156 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# AI tool config dirs
+.claude/
+.windsurf/
+.zencoder/
+.agents/
+.zencoder
+.cline/
+
+# --- Production hygiene (added before the first push) ---
+
+# Secrets: this root file previously had no .env rule at all, so a root-level
+# .env would have been committed. The app folder has its own `.env*` rule.
+.env
+.env.*
+!.env.example
+
+# Editor-local settings. A pattern containing a middle separator (e.g.
+# `.vscode/*`) is anchored to this file's directory, so it does NOT reach the
+# nested app folder — hence the explicit path below.
+/ncrstartupmap-nextjs/.vscode/
+
+# Scratch console dumps from earlier debugging sessions (root level only).
+/*.txt
+
+# Leftover lockfile from the removed Vite project.
+# CLAUDE.md: "never commit a root package-lock.json".
+/package-lock.json
+
+# Lockfile policy: CI runs `npm ci` (see .github/workflows/*), which requires
+# ncrstartupmap-nextjs/package-lock.json. Keep this one out until CI is switched
+# to pnpm AND package-lock.json is deleted.
+pnpm-lock.yaml
+
+# Build / test output, in case the app is ever run from the repo root
+.next/
+out/
+coverage/
+*.tsbuildinfo
+playwright-report/
+test-results/
+
+# Machine-learning model weights. None exist in this project today (verified:
+# no match across all 289 candidates, and no file over 1 MB outside
+# node_modules/.next). Kept as a guard so a future embedding / geocoding /
+# classifier model can never be committed by accident — weights are binary
+# build inputs, not source: they belong in artifact storage, not in git.
+*.gguf
+*.onnx
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.tflite
+*.mlmodel
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+*.npy
+*.npz
+*.tfrecord
+*.parquet
+*.msgpack
+*.safetensors.index.json
+model-weights/
+models/
+
+# Other large binaries: GitHub rejects pushes over 100 MB per file and warns
+# from 50 MB, so keep them out of the history from the start. Un-ignore a
+# specific path with `!` if a legitimate one is ever needed.
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+*.wasm
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+
+# --- AI / LLM context + tooling files -------------------------------------
+# Prompts, agent rule files and assistant session state: these are inputs to
+# machine assistants, not product source. Useful locally, so they stay on disk
+# — they just never belong in the shipped repository. Bare filenames match at
+# every level, so the root and ncrstartupmap-nextjs/ copies are both covered.
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+COPILOT.md
+QWEN.md
+llms.txt
+llms-full.txt
+copilot-instructions.md
+.cursorrules
+.windsurfrules
+.clinerules
+.byterules
+.roomodes
+.aiderignore
+.aider.conf.yml
+.mcp.json
+
+# AI tool state/config directories (.claude/, .cline/, .agents/, .windsurf/
+# and .zencoder/ are already covered above). Same rationale: local machine
+# state, not project source.
+.cursor/
+.continue/
+.specstory/
+.aider/
+.gemini/
+.codex/
+.openai/
+.roo/
+.kilocode/
+.junie/
+.codeium/
+.trae/
+.qoder/
+.zed/
+.idx/

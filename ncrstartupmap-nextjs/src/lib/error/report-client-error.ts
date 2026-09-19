@@ -1,14 +1,14 @@
 import * as Sentry from "@sentry/nextjs";
-import { monitorError } from "@/lib/analytics/monitor-error";
 
 /**
  * Client-side error reporting for the dashboard error boundary (Phase U4)
  * and the root `global-error.tsx` fallback.
  *
- * Sentry is the primary transport; `monitorError` (console) stays as the
- * local-dev fallback. No-op when NEXT_PUBLIC_SENTRY_DSN is unset, so local
- * dev without secrets stays silent. Signature unchanged — call sites
- * (error boundaries) do not change.
+ * Sentry is the primary transport. P2-7 (audit M9): the old `monitorError`
+ * fetch to the non-existent /api/analytics/error endpoint was removed —
+ * dev visibility now comes from a plain dev-only console.warn, so local
+ * development without a Sentry DSN stays silent by default and production
+ * never posts errors to a missing route.
  */
 export function reportClientError(error: unknown, context: Record<string, unknown> = {}): void {
   // react-error-boundary v6 types onError's error as `unknown` — normalize the
@@ -17,5 +17,7 @@ export function reportClientError(error: unknown, context: Record<string, unknow
   if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
     Sentry.captureException(normalized, { extra: context });
   }
-  monitorError(normalized, context);
+  if (process.env.NODE_ENV !== "production") {
+    console.warn("[reportClientError]", normalized, context);
+  }
 }

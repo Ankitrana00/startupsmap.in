@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSecurityHeaders } from "@/lib/security/headers";
 import { isAdminPath } from "@/lib/middleware/paths";
+import { hppMiddleware } from "@/lib/security/hpp";
 
 // Paths that must never appear in search results: admin panel, JSON APIs,
 // auth-walled account pages, and token-gated verification links. Served as
@@ -13,6 +14,14 @@ const NOINDEX_PREFIXES = ["/admin", "/api", "/account", "/verify"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProduction = process.env.NODE_ENV === "production";
+
+  // P2-6 (audit §3): per-request correlation ID. Always generated fresh — the
+  // incoming `x-request-id` header is attacker-controlled and must never be
+  // echoed (same lesson as the removed `x-rate-limit` echo, P2-8). It is set
+  // on BOTH the request forwarded to route handlers (so reportServerError can
+  // tag Sentry events) and the outgoing response (so client/dev logs and
+  // Sentry events correlate to the same request).
+  const requestId = crypto.randomUUID();
 
   // ─── Admin Route Protection ────────────────────────────────────────────
   // C3: block BOTH the admin UI (/admin/*) and its auth API (/api/admin/*) in
@@ -27,16 +36,24 @@ export function middleware(request: NextRequest) {
       // API paths get a flat 404 — a redirect from an API is meaningless and
       // would still leak that the endpoint exists.
       if (pathname.startsWith("/api/")) {
-        return new NextResponse("Not Found", { status: 404 });
+        return new NextResponse("Not Found", {
+          status: 404,
+          headers: { "x-request-id": requestId },
+        });
       }
       // Redirect to homepage instead of revealing admin route existence
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/", request.url), {
+        headers: { "x-request-id": requestId },
+      });
     }
   }
 
   // Security headers — single source of truth (src/lib/security/headers.ts).
   // Only apply in production to avoid HSTS/CSP issues during development.
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-request-id", requestId);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("x-request-id", requestId);
   if (isProduction) {
     const headers = getSecurityHeaders();
     for (const [key, value] of Object.entries(headers)) {
@@ -44,10 +61,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Rate limiting for API routes
-  if (pathname.startsWith("/api/")) {
-    const rateLimit = request.headers.get("x-rate-limit") || "100";
-    response.headers.set("X-RateLimit-Limit", rateLimit);
+  // P2-8 (audit §4.2 + M8): HPP protection on GET APIs. Duplicate query
+  // params are a parameter-pollution vector; the wired module returns a 400.
+  // (The previous `x-rate-limit` echo — an attacker-controlled header copied
+  // into X-RateLimit-Limit — was removed: it did no limiting and trusted
+  // client input. Real limiting lives in the per-endpoint limiters.)
+  if (request.method === "GET" && pathname.startsWith("/api/")) {
+    const hppResult = hppMiddleware(request);
+    if (hppResult) {
+      hppResult.headers.set("x-request-id", requestId);
+      return hppResult;
+    }
   }
 
   // noindex for private routes — belt-and-suspenders alongside robots.txt

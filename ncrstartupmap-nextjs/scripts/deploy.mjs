@@ -20,9 +20,14 @@ switch (platform) {
     execSync("npx netlify deploy --prod --dir=.next", { stdio: "inherit" });
     break;
   case "aws":
-    console.log("Deploying to AWS...");
-    execSync("npm run deploy:aws", { stdio: "inherit" });
-    break;
+    // P3-5: there is no AWS deploy tooling in this repo (no `deploy:aws` script,
+    // no serverless/SST config) — saying so beats shelling out to a command that
+    // cannot exist. Deploy the Next.js app to a Node host yourself, or use Vercel.
+    console.error(
+      "AWS deployment is not configured in this project. No `deploy:aws` script\n" +
+        "exists and Vercel is the supported target — see docs/DEPLOYMENT.md.",
+    );
+    process.exit(1);
   default:
     console.error(`Unknown deployment target: ${platform}`);
     process.exit(1);

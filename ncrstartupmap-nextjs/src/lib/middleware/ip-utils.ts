@@ -1,9 +1,19 @@
+/**
+ * P1-3 (audit H4): centralized client-IP extraction for rate limiting.
+ * Order: x-real-ip first (Vercel strips inbound x-forwarded-for spoofing but
+ * x-real-ip is platform-controlled), then the leftmost x-forwarded-for hop,
+ * falling back to "unknown". All per-endpoint limiters must use this helper
+ * so a spoofed x-forwarded-for can never bypass a bucket.
+ */
 export function getClientIp(req: Request): string {
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
     return forwarded.split(",")[0].trim();
   }
-  return req.headers.get("x-real-ip") || "unknown";
+  return "unknown";
 }
 
 export function isValidIp(ip: string): boolean {

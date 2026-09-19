@@ -1,5 +1,7 @@
 import { compare } from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
+import { randomUUID } from "crypto";
+import { getRedisClient } from "@/lib/cache/redis";
 
 export interface AdminUser {
   id: string;
@@ -9,18 +11,90 @@ export interface AdminUser {
   createdAt: Date;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-only-change-in-production";
+/**
+ * P0-2 (audit C2): fail closed in production. Previously JWT_SECRET fell back
+ * to a publicly-known string, so a prod boot without the env var silently
+ * signed forgeable admin JWTs. In production a missing secret now throws at
+ * module load — the deploy fails loudly instead of running with a known key.
+ * Dev/test behavior is unchanged so local boot stays friction-free.
+ */
+const isProduction = process.env.NODE_ENV === "production";
+
+function assertProductionSecret(name: string, value: string | undefined): void {
+  if (isProduction && !value) {
+    throw new Error(
+      `${name} is not set — refusing to initialize admin auth in production without it (fail-closed).`,
+    );
+  }
+}
+
+const JWT_SECRET_VALUE = process.env.JWT_SECRET;
+assertProductionSecret("JWT_SECRET", JWT_SECRET_VALUE);
+const JWT_SECRET = JWT_SECRET_VALUE || "dev-only-change-in-production";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@startupsmap.in";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+// verifyAdminCredentials already throws on an unset ADMIN_PASSWORD; this
+// module-level check extends the same fail-closed guarantee to boot time.
+assertProductionSecret("ADMIN_PASSWORD", ADMIN_PASSWORD);
 
-// JWT token expiry (30 days)
-const TOKEN_EXPIRY = "30d";
+
+// P1-2 (audit H1): short admin sessions. 30 days was only safe with
+// rotation/revocation; 12h absolute expiry limits blast radius of a stolen
+// cookie. Revocation below covers logout; expiry covers the rest.
+const TOKEN_EXPIRY = "12h";
+
+/** P1-2: exported so the login route can match the cookie maxAge to the JWT. */
+export const TOKEN_TTL_SECONDS = 12 * 60 * 60;
+
+/**
+ * P1-2 (audit H1): deny-list of revoked token IDs (jti). Logout revokes the
+ * session server-side instead of only deleting the cookie — a stolen token
+ * replayed after logout is rejected until its natural expiry.
+ */
+const REVOKED_KEY_PREFIX = "admin:revoked:";
+
+export async function revokeToken(jti: string, expiresInSeconds: number): Promise<void> {
+  const store = getRedisClient();
+  await store.set(
+    `${REVOKED_KEY_PREFIX}${jti}`,
+    "1",
+    Math.max(1, Math.ceil(expiresInSeconds)),
+  );
+}
+
+async function isTokenRevoked(jti: string): Promise<boolean> {
+  const store = getRedisClient();
+  return (await store.get(`${REVOKED_KEY_PREFIX}${jti}`)) !== null;
+}
+
+/**
+ * P1-2 helper for /api/admin/logout: read a token's `jti` and remaining
+ * lifetime WITHOUT accepting it as a valid session (used only after the
+ * token has already been verified). Returns null for invalid/expired tokens.
+ */
+export async function peekTokenJti(
+  token: string
+): Promise<{ jti: string; expiresInSeconds: number } | null> {
+  try {
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    if (!payload.jti) return null;
+    const expiresInSeconds =
+      payload.exp === undefined
+        ? TOKEN_TTL_SECONDS
+        : Math.max(1, Math.ceil((payload.exp * 1000 - Date.now()) / 1000));
+    return { jti: payload.jti, expiresInSeconds };
+  } catch {
+    return null;
+  }
+}
 
 export async function generateAdminToken(user: AdminUser): Promise<string> {
   const secret = new TextEncoder().encode(JWT_SECRET);
   return new SignJWT({ ...user, createdAt: user.createdAt.toISOString() })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
+    .setJti(randomUUID())
     .setExpirationTime(TOKEN_EXPIRY)
     .sign(secret);
 }
@@ -31,7 +105,12 @@ export async function verifyAdminToken(token: string): Promise<AdminUser | null>
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
-    
+
+    // P1-2: reject tokens revoked via logout (deny-list check).
+    if (payload.jti && (await isTokenRevoked(payload.jti))) {
+      return null;
+    }
+
     return {
       id: payload.id as string,
       username: payload.username as string,

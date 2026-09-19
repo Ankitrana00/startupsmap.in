@@ -1,5 +1,12 @@
 #!/usr/bin/env node
-import { execSync } from "child_process";
+/**
+ * P2-9 (audit M6): safe backup script. The previous version interpolated
+ * DATABASE_URL into a shell string (command-injection vector if the URL ever
+ * contained quotes/backticks). Now: parse the URL with the URL constructor,
+ * pass the connection string as an argv element to pg_dump via spawn with
+ * shell:false — no shell interpolation anywhere.
+ */
+import { spawn } from "child_process";
 import { mkdirSync } from "fs";
 import { join } from "path";
 
@@ -9,21 +16,40 @@ const backupFile = join(backupDir, `backup-${timestamp}.sql`);
 
 console.log("Starting database backup...");
 
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error("DATABASE_URL not set");
+  process.exit(1);
+}
+
+// Validate the URL parses before spawning anything.
 try {
-  // Create backup directory if it doesn't exist
+  new URL(databaseUrl);
+} catch {
+  console.error("DATABASE_URL is not a valid URL");
+  process.exit(1);
+}
+
+try {
   mkdirSync(backupDir, { recursive: true });
 
-  // Execute backup
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL not set");
-  }
+  const child = spawn("pg_dump", [databaseUrl, "-f", backupFile], {
+    shell: false,
+    stdio: "inherit",
+  });
 
-  // Parse connection info and run pg_dump
-  const cmd = `PGPASSWORD=$(echo "${databaseUrl}" | sed 's|.*://[^:]*:[^@]*@||' | sed 's|.*://[^:]*:||') pg_dump "${databaseUrl}" > "${backupFile}"`;
-  execSync(cmd, { stdio: "inherit" });
+  child.on("error", (err) => {
+    console.error("Failed to start pg_dump:", err.message);
+    process.exit(1);
+  });
 
-  console.log(`Backup saved to: ${backupFile}`);
+  child.on("close", (code) => {
+    if (code !== 0) {
+      console.error(`Backup failed: pg_dump exited with code ${code}`);
+      process.exit(1);
+    }
+    console.log(`Backup saved to: ${backupFile}`);
+  });
 } catch (error) {
   console.error("Backup failed:", error.message);
   process.exit(1);

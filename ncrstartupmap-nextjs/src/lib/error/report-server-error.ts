@@ -13,12 +13,22 @@ import * as Sentry from "@sentry/nextjs";
  */
 export function reportServerError(
   error: unknown,
-  context: { route: string; layer?: string; extra?: Record<string, unknown> },
+  context: {
+    route: string;
+    layer?: string;
+    /** P2-6: middleware's per-request `x-request-id` — ties the Sentry event to the request's structured log lines. */
+    requestId?: string;
+    extra?: Record<string, unknown>;
+  },
 ): void {
   if (!process.env.SENTRY_DSN && !process.env.NEXT_PUBLIC_SENTRY_DSN) return;
   const normalized = error instanceof Error ? error : new Error(String(error));
   Sentry.captureException(normalized, {
-    tags: { route: context.route, ...(context.layer ? { layer: context.layer } : {}) },
+    tags: {
+      route: context.route,
+      ...(context.layer ? { layer: context.layer } : {}),
+      ...(context.requestId ? { requestId: context.requestId } : {}),
+    },
     extra: context.extra,
   });
 }

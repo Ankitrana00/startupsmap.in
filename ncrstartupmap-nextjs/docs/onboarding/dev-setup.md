@@ -31,15 +31,22 @@ cp .env.example .env.local
 
 ### 4. Setup Database
 
+The data layer is Supabase (the app never opens a raw Postgres connection), so
+migrations are applied with the Supabase CLI:
+
 ```bash
-# Create database
-createdb ncr_startup_map
+# One-time: link this checkout to your Supabase project
+supabase link --project-ref <your-project-ref>
 
-# Run migrations
-npm run db:migrate
+# Apply supabase/migrations/*.sql in order
+supabase db push
+supabase migration list        # confirm what is applied
+```
 
-# Seed data (optional)
-npm run db:seed
+Sample data is optional and needs `DATABASE_URL` (script-only variable):
+
+```bash
+node scripts/seed.mjs
 ```
 
 ### 5. Start Development

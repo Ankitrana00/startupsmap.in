@@ -1,3 +1,22 @@
+> **STATUS: PLANNED — NOT IMPLEMENTED.**
+> There is currently **no `/api/v1/*` route in this codebase.** Everything below
+> documents a proposed versioned surface (fix plan `P2-2`/`P2-3`), not live
+> behaviour. Do not build clients against it yet.
+>
+> What actually exists today:
+>
+> | Endpoint | Method | Purpose |
+> | --- | --- | --- |
+> | `/api/startups` | `GET` | Paginated + filterable public list (`page`, `limit`, `area`, `sector`, `stage`, `search`). Response is `{ startups, meta: { total, page, pageSize, totalPages } }`, cached 60s. |
+> | `/api/startups` | `POST` | Authorized insert (JWT cookie). Body validated; on success it invalidates the list cache. |
+> | `/api/submit` | `POST` | Public submission form → email + Supabase insert. Supports `Idempotency-Key`. |
+> | `/api/promote` | `POST` | Public promotion lead → email. Supports `Idempotency-Key`. |
+> | `/api/ready` | `GET` | Readiness probe (no secret values). |
+>
+> The real response shape and status codes live in `src/app/api/startups/route.ts`
+> and `src/lib/types/api.ts`.
+
+
 # Startups API v1
 
 ## Endpoints

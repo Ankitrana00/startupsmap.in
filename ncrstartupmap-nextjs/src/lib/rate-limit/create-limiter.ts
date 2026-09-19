@@ -1,17 +1,16 @@
+﻿import { getRedisClient, isRedisConfigured } from "@/lib/cache/redis";
+
 /**
- * Shared in-memory rate limiter factory. One implementation, instantiated
- * per endpoint so each flow gets an independent quota (submit: 5/h,
- * promote: 3/h) without sharing buckets.
+ * Shared rate limiter factory (P1-3, audit H4/H5).
  *
- * H3: the factory now also reports how many seconds remain in the current
- * window (retryAfterSeconds) so API routes can emit a `Retry-After` header
- * and callers can show a cooldown to the user instead of a flat "try later".
+ * Production: counters live in Redis (via the shared client in
+ * lib/cache/redis.ts) so quotas are enforced across all serverless
+ * instances — per-process Maps multiplied the brute-force budget by the
+ * instance count. Dev / no-Redis: identical in-memory fallback, so local
+ * boot and unit tests need no Redis.
  *
- * KNOWN PRODUCTION LIMITATION (documented, accepted for dev): state is
- * per-process — multi-instance/serverless deployments get per-instance
- * limits, and restarts reset quotas. Replace the backing store with Redis
- * (e.g. Upstash) behind this same factory interface later; call sites and
- * per-endpoint quotas stay unchanged.
+ * The public surface is now async (check / retryAfterSeconds return
+ * Promises) — call sites await both.
  */
 export function createRateLimiter(limit: number, windowMs: number) {
   const MAX_TRACKED_IPS = 10_000;
@@ -19,36 +18,78 @@ export function createRateLimiter(limit: number, windowMs: number) {
   /** Single bucket per IP — window start + request count together. */
   const buckets = new Map<string, { start: number; count: number }>();
 
+  async function memoryCheck(ip: string): Promise<boolean> {
+    const now = Date.now();
+
+    // Bound memory: when tracking too many IPs, drop expired windows.
+    if (buckets.size > MAX_TRACKED_IPS) {
+      for (const [key, bucket] of buckets) {
+        if (now - bucket.start > windowMs) {
+          buckets.delete(key);
+        }
+      }
+    }
+
+    const bucket = buckets.get(ip);
+    if (!bucket || now - bucket.start > windowMs) {
+      buckets.set(ip, { start: now, count: 1 });
+      return true;
+    }
+    if (bucket.count >= limit) return false;
+    bucket.count += 1;
+    return true;
+  }
+
   return {
     /**
      * Returns true if the request is within quota; false once rate-limited.
      * When rate-limited, `retryAfterSeconds()` yields the wall-clock seconds
      * remaining in the current window (so the caller can send Retry-After).
      */
-    check(ip: string): boolean {
-      const now = Date.now();
+    async check(ip: string): Promise<boolean> {
+      if (isRedisConfigured()) {
+        try {
+          const store = getRedisClient();
+          const key = `rl:${windowMs}:${ip}`;
+          const current = await store.get(key);
+          const now = Date.now();
 
-      // Bound memory: when tracking too many IPs, drop expired windows.
-      if (buckets.size > MAX_TRACKED_IPS) {
-        for (const [key, bucket] of buckets) {
-          if (now - bucket.start > windowMs) {
-            buckets.delete(key);
+          if (!current) {
+            await store.set(key, JSON.stringify({ start: now, count: 1 }), Math.ceil(windowMs / 1000));
+            return true;
           }
+
+          const bucket = JSON.parse(current) as { start: number; count: number };
+          if (now - bucket.start > windowMs) {
+            await store.set(key, JSON.stringify({ start: now, count: 1 }), Math.ceil(windowMs / 1000));
+            return true;
+          }
+          if (bucket.count >= limit) return false;
+          bucket.count += 1;
+          await store.set(key, JSON.stringify(bucket), Math.ceil((windowMs - (now - bucket.start)) / 1000));
+          return true;
+        } catch {
+          // Redis unavailable — degrade to in-memory rather than failing open.
         }
       }
-
-      const bucket = buckets.get(ip);
-      if (!bucket || now - bucket.start > windowMs) {
-        buckets.set(ip, { start: now, count: 1 });
-        return true;
-      }
-      if (bucket.count >= limit) return false;
-      bucket.count += 1;
-      return true;
+      return memoryCheck(ip);
     },
 
-    /** Whole-second cooldown remaining on the *current* IP's window (0 if none/blocked window elapsed). */
-    retryAfterSeconds(ip: string): number {
+    /** Whole-second cooldown remaining on the current IP window (0 if none). */
+    async retryAfterSeconds(ip: string): Promise<number> {
+      if (isRedisConfigured()) {
+        try {
+          const current = await getRedisClient().get(`rl:${windowMs}:${ip}`);
+          if (current) {
+            const bucket = JSON.parse(current) as { start: number };
+            const remaining = windowMs - (Date.now() - bucket.start);
+            return remaining > 0 ? Math.ceil(remaining / 1000) : 0;
+          }
+          return 0;
+        } catch {
+          // fall through to memory
+        }
+      }
       const bucket = buckets.get(ip);
       if (!bucket) return 0;
       const elapsed = Date.now() - bucket.start;

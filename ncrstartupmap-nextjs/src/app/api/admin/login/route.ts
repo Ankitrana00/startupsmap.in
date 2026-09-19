@@ -1,24 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminCredentials, generateAdminToken } from "@/lib/admin/auth";
+import { verifyAdminCredentials, generateAdminToken, TOKEN_TTL_SECONDS } from "@/lib/admin/auth";
+import { getClientIp } from "@/lib/middleware/ip-utils";
 import { reportServerError } from "@/lib/error/report-server-error";
 import { checkRateLimit, limiter } from "./rate-limit";
+import { recordAdminAuth } from "@/lib/admin/audit-login";
+import { z } from "zod";
 
-/** Same IP extraction as /api/submit (x-forwarded-for first hop, then x-real-ip). */
-function clientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip")?.trim() ||
-    "unknown"
-  );
-}
+/** P2-1 (audit M1): server-side schema for the login body validation. */
+const loginSchema = z.object({
+  email: z.string().email().max(255),
+  password: z.string().min(1).max(1024),
+});
 
 export async function POST(req: NextRequest) {
+  // P2-6: correlation ID set by middleware — used in the audit trail below.
+  const requestId = req.headers.get("x-request-id") ?? undefined;
+
   // C3: rate limit BEFORE any parsing/credential work so brute-force floods
   // are rejected up front (same pattern as /api/submit).
-    const ip = clientIp(req);
-  if (!checkRateLimit(ip)) {
+  const ip = getClientIp(req);
+  if (!(await checkRateLimit(ip))) {
+    // P3-4: record throttling as its own outcome so a brute-force burst is
+    // visible in the audit trail even though no credentials were checked.
+    recordAdminAuth("rate_limited", { ip, requestId });
     // H3: surface Retry-After so callers can show a cooldown.
-    const retryAfter = limiter.retryAfterSeconds(ip);
+    const retryAfter = await limiter.retryAfterSeconds(ip);
     return NextResponse.json(
       { error: "Too many login attempts. Please try again later." },
       { status: 429, headers: { "Retry-After": String(retryAfter) } },
@@ -26,24 +32,34 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
 
-    // Validate input
-    if (!email || !password) {
+    // P2-1 (audit M1): zod validation replaces the old presence-only check —
+    // non-string / oversized / malformed payloads now get 400.
+    const parsed = loginSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
         { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
+    const { email, password } = parsed.data;
+
     // Verify credentials
     const user = await verifyAdminCredentials(email, password);
     if (!user) {
+      // P3-4: failed attempt — logged, and escalated to Sentry after a burst
+      // of consecutive failures from this IP.
+      recordAdminAuth("failure", { ip, requestId });
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
       );
     }
+
+    // P3-4: successful login — clears the IP's failure streak.
+    recordAdminAuth("success", { ip, requestId });
 
     // Generate JWT token
     const token = await generateAdminToken(user);
@@ -58,7 +74,8 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      // P1-2: cookie lifetime now matches the 12h token TTL (was 30 days).
+      maxAge: TOKEN_TTL_SECONDS,
       path: "/",
     });
 
@@ -71,7 +88,11 @@ export async function POST(req: NextRequest) {
       );
     }
     // Unexpected failure (JWT signing, credential store) — worth an alert.
-    reportServerError(error, { route: "api/admin/login" });
+    // P2-6: correlation ID set by middleware — tagged on the Sentry event.
+    reportServerError(error, {
+      route: "api/admin/login",
+      requestId: req.headers.get("x-request-id") ?? undefined,
+    });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

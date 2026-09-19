@@ -5,6 +5,12 @@ import { reportServerError } from "@/lib/error/report-server-error";
 import { getClientIp } from "@/lib/middleware/ip-utils";
 import { checkRateLimit, limiter } from "./rate-limit";
 
+/**
+ * Admin auth routes must never be statically collected during `next build` —
+ * they reach env-gated modules, so evaluation happens per request at runtime.
+ */
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   // P1-6 (audit M7): the admin session check had no rate limit (30/min/IP).
   const ip = getClientIp(request);

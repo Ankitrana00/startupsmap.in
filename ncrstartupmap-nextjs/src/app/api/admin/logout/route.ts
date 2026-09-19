@@ -5,6 +5,13 @@ import { recordAdminAuth } from "@/lib/admin/audit-login";
 import { getClientIp } from "@/lib/middleware/ip-utils";
 
 /**
+/**
+ * Admin auth routes must never be statically collected during `next build` —
+ * they reach env-gated modules, so evaluation happens per request at runtime.
+ */
+export const dynamic = "force-dynamic";
+
+/**
  * P1-2 (audit H1): logout now revokes the session server-side (jti deny-list)
  * instead of only deleting the cookie — a stolen token replayed after logout
  * is rejected until its natural expiry.

@@ -14,28 +14,42 @@ export interface AdminUser {
 /**
  * P0-2 (audit C2): fail closed in production. Previously JWT_SECRET fell back
  * to a publicly-known string, so a prod boot without the env var silently
- * signed forgeable admin JWTs. In production a missing secret now throws at
- * module load — the deploy fails loudly instead of running with a known key.
- * Dev/test behavior is unchanged so local boot stays friction-free.
+ * signed forgeable admin JWTs.
+ *
+ * The check is lazy (evaluated on first use, not at module load) because
+ * Next.js imports route modules during `next build` with NODE_ENV=production
+ * to collect page data — a module-load throw breaks the build even when the
+ * runtime environment is correctly configured. At request time the behavior
+ * is identical: missing secrets in production throw loudly instead of
+ * running with a known key. Dev/test behavior is unchanged.
  */
-const isProduction = process.env.NODE_ENV === "production";
+const isProduction = () => process.env.NODE_ENV === "production";
 
 function assertProductionSecret(name: string, value: string | undefined): void {
-  if (isProduction && !value) {
+  if (isProduction() && !value) {
     throw new Error(
       `${name} is not set — refusing to initialize admin auth in production without it (fail-closed).`,
     );
   }
 }
 
-const JWT_SECRET_VALUE = process.env.JWT_SECRET;
-assertProductionSecret("JWT_SECRET", JWT_SECRET_VALUE);
-const JWT_SECRET = JWT_SECRET_VALUE || "dev-only-change-in-production";
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@startupsmap.in";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
-// verifyAdminCredentials already throws on an unset ADMIN_PASSWORD; this
-// module-level check extends the same fail-closed guarantee to boot time.
-assertProductionSecret("ADMIN_PASSWORD", ADMIN_PASSWORD);
+function getJwtSecret(): string {
+  const value = process.env.JWT_SECRET;
+  assertProductionSecret("JWT_SECRET", value);
+  return value || "dev-only-change-in-production";
+}
+
+function getAdminEmail(): string {
+  return process.env.ADMIN_EMAIL || "admin@startupsmap.in";
+}
+
+function getAdminPassword(): string {
+  const value = process.env.ADMIN_PASSWORD || "";
+  // verifyAdminCredentials already throws on an unset ADMIN_PASSWORD; this
+  // request-time check extends the same fail-closed guarantee to boot time.
+  assertProductionSecret("ADMIN_PASSWORD", value);
+  return value;
+}
 
 
 // P1-2 (audit H1): short admin sessions. 30 days was only safe with
@@ -76,7 +90,7 @@ export async function peekTokenJti(
   token: string
 ): Promise<{ jti: string; expiresInSeconds: number } | null> {
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
+    const secret = new TextEncoder().encode(getJwtSecret());
     const { payload } = await jwtVerify(token, secret);
     if (!payload.jti) return null;
     const expiresInSeconds =
@@ -90,7 +104,7 @@ export async function peekTokenJti(
 }
 
 export async function generateAdminToken(user: AdminUser): Promise<string> {
-  const secret = new TextEncoder().encode(JWT_SECRET);
+  const secret = new TextEncoder().encode(getJwtSecret());
   return new SignJWT({ ...user, createdAt: user.createdAt.toISOString() })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -103,7 +117,7 @@ export async function verifyAdminToken(token: string): Promise<AdminUser | null>
   if (!token) return null;
 
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
+    const secret = new TextEncoder().encode(getJwtSecret());
     const { payload } = await jwtVerify(token, secret);
 
     // P1-2: reject tokens revoked via logout (deny-list check).
@@ -127,19 +141,21 @@ export async function verifyAdminCredentials(
   email: string,
   password: string
 ): Promise<AdminUser | null> {
-  if (!ADMIN_PASSWORD) {
+  const adminPassword = getAdminPassword();
+  if (!adminPassword) {
     throw new Error("ADMIN_PASSWORD not configured");
   }
 
-  if (email !== ADMIN_EMAIL) return null;
-  
-  const passwordMatch = await compare(password, ADMIN_PASSWORD);
+  const adminEmail = getAdminEmail();
+  if (email !== adminEmail) return null;
+
+  const passwordMatch = await compare(password, adminPassword);
   if (!passwordMatch) return null;
 
   return {
     id: "admin-001",
     username: "admin",
-    email: ADMIN_EMAIL,
+    email: adminEmail,
     role: "admin",
     createdAt: new Date(),
   };
@@ -168,7 +184,7 @@ export async function verifyAdmin(token: string): Promise<AdminUser | null> {
   return {
     id: "admin-001",
     username: "admin",
-    email: ADMIN_EMAIL,
+    email: getAdminEmail(),
     role: "admin",
     createdAt: new Date(),
   };

@@ -6,6 +6,12 @@ import { checkRateLimit, limiter } from "./rate-limit";
 import { recordAdminAuth } from "@/lib/admin/audit-login";
 import { z } from "zod";
 
+/**
+ * Admin auth pages must never be statically collected during `next build` —
+ * they reach env-gated modules, so evaluation happens per request at runtime.
+ */
+export const dynamic = "force-dynamic";
+
 /** P2-1 (audit M1): server-side schema for the login body validation. */
 const loginSchema = z.object({
   email: z.string().email().max(255),

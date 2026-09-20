@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { createRateLimiter } from "@/lib/rate-limit/create-limiter";
+import { createLimiter } from "@/lib/limiters";
 
 /**
- * H3 coverage: createRateLimiter returns { check, retryAfterSeconds }.
+ * H3 coverage: createLimiter returns { check, retryAfterSeconds }.
  * retryAfterSeconds must report the wall-clock seconds remaining in an IP's
  * current window (so API routes can emit Retry-After headers).
  *
@@ -11,15 +11,15 @@ import { createRateLimiter } from "@/lib/rate-limit/create-limiter";
  * assertions preserved; async contract added.
  */
 
-describe("createRateLimiter — H3 (Retry-After)", () => {
+describe("createLimiter — H3 (Retry-After)", () => {
   it("returns an object with check() and retryAfterSeconds() methods", () => {
-    const limiter = createRateLimiter(5, 60_000);
+    const limiter = createLimiter(5, 60_000);
     expect(typeof limiter.check).toBe("function");
     expect(typeof limiter.retryAfterSeconds).toBe("function");
   });
 
   it("returns >0 retryAfterSeconds while inside an active window", async () => {
-    const limiter = createRateLimiter(1, 60_000);
+    const limiter = createLimiter(1, 60_000);
     // First call creates the bucket.
     expect(await limiter.check("1.2.3.4")).toBe(true);
     const remaining = await limiter.retryAfterSeconds("1.2.3.4");
@@ -30,12 +30,12 @@ describe("createRateLimiter — H3 (Retry-After)", () => {
   });
 
   it("returns 0 retryAfterSeconds for an IP with no bucket", async () => {
-    const limiter = createRateLimiter(5, 60_000);
+    const limiter = createLimiter(5, 60_000);
     expect(await limiter.retryAfterSeconds("9.9.9.9")).toBe(0);
   });
 
   it("check() returns false once limit is exceeded", async () => {
-    const limiter = createRateLimiter(2, 60_000);
+    const limiter = createLimiter(2, 60_000);
     expect(await limiter.check("1.1.1.1")).toBe(true); // count=1
     expect(await limiter.check("1.1.1.1")).toBe(true); // count=2
     expect(await limiter.check("1.1.1.1")).toBe(false); // over limit
@@ -44,8 +44,8 @@ describe("createRateLimiter — H3 (Retry-After)", () => {
   });
 
   it("P1-3: independent limiter instances do not share buckets", async () => {
-    const a = createRateLimiter(1, 60_000);
-    const b = createRateLimiter(1, 60_000);
+    const a = createLimiter(1, 60_000);
+    const b = createLimiter(1, 60_000);
     expect(await a.check("shared-ip")).toBe(true);
     expect(await a.check("shared-ip")).toBe(false);
     // Same IP, different limiter → own bucket.
@@ -56,7 +56,7 @@ describe("createRateLimiter — H3 (Retry-After)", () => {
     // Namespace is derived from quota+window only when Upstash is configured;
     // in-memory fallback namespaces per instance, so this documents the
     // dev-mode limitation instead of asserting cross-instance behavior.
-    const a = createRateLimiter(1, 60_000);
+    const a = createLimiter(1, 60_000);
     expect(await a.check("ip-a")).toBe(true);
     expect(await a.check("ip-a")).toBe(false);
   });

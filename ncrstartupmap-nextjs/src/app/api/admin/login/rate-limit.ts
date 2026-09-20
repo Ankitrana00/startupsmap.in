@@ -1,4 +1,4 @@
-import { createRateLimiter } from "@/lib/rate-limit/create-limiter";
+import { createLimiter } from "@/lib/limiters";
 
 /**
  * Admin login attempts (C3): 5 per 15 min per IP — hardens the brute-force
@@ -6,5 +6,5 @@ import { createRateLimiter } from "@/lib/rate-limit/create-limiter";
  * a dedicated instance so the admin quota never shares buckets with the
  * public flows (per-endpoint quotas are the factory's contract).
  */
-export const limiter = createRateLimiter(5, 15 * 60 * 1000);
+export const limiter = createLimiter(5, 15 * 60 * 1000);
 export const checkRateLimit = limiter.check;

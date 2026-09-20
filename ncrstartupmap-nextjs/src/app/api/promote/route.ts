@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   // are silently "accepted" and discarded — the lead is never stored/sent.
   if (body.honeypot_website) {
     return NextResponse.json(
-      { success: true, message: "Request submitted successfully" },
+      { message: "Request submitted successfully" },
       { status: 201 },
     );
   }
@@ -81,7 +81,6 @@ export async function POST(request: Request) {
   try {
     await sendPromotionLead(parsed.data);
     const responseBody = {
-      success: true,
       message: "Request submitted successfully",
     };
     // P3-1: store the outcome so an identical retry replays this 201.

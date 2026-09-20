@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reportServerError } from "@/lib/error/report-server-error";
 import { log } from "@/lib/logging/logger";
-import { createRateLimiter } from "@/lib/rate-limit/create-limiter";
+import { createLimiter } from "@/lib/limiters";
 import { getClientIp } from "@/lib/middleware/ip-utils";
 
 const OSM_TILE_URL = "https://tile.openstreetmap.org";
@@ -11,7 +11,7 @@ const OSM_TILE_URL = "https://tile.openstreetmap.org";
 const CACHE_DURATION = 60 * 60 * 24 * 90; // 90 days in seconds
 
 /** P1-5 (audit H3): generous per-IP quota for the proxy. */
-const limiter = createRateLimiter(300, 60 * 1000);
+const limiter = createLimiter(300, 60 * 1000);
 
 export async function GET(
   request: NextRequest,

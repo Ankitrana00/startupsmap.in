@@ -13,13 +13,13 @@ import { createLimiter } from "@/lib/limiters";
 
 describe("createLimiter — H3 (Retry-After)", () => {
   it("returns an object with check() and retryAfterSeconds() methods", () => {
-    const limiter = createLimiter(5, 60_000);
+    const limiter = createLimiter(5, 60_000, "test");
     expect(typeof limiter.check).toBe("function");
     expect(typeof limiter.retryAfterSeconds).toBe("function");
   });
 
   it("returns >0 retryAfterSeconds while inside an active window", async () => {
-    const limiter = createLimiter(1, 60_000);
+    const limiter = createLimiter(1, 60_000, "test");
     // First call creates the bucket.
     expect(await limiter.check("1.2.3.4")).toBe(true);
     const remaining = await limiter.retryAfterSeconds("1.2.3.4");
@@ -30,12 +30,12 @@ describe("createLimiter — H3 (Retry-After)", () => {
   });
 
   it("returns 0 retryAfterSeconds for an IP with no bucket", async () => {
-    const limiter = createLimiter(5, 60_000);
+    const limiter = createLimiter(5, 60_000, "test");
     expect(await limiter.retryAfterSeconds("9.9.9.9")).toBe(0);
   });
 
   it("check() returns false once limit is exceeded", async () => {
-    const limiter = createLimiter(2, 60_000);
+    const limiter = createLimiter(2, 60_000, "test");
     expect(await limiter.check("1.1.1.1")).toBe(true); // count=1
     expect(await limiter.check("1.1.1.1")).toBe(true); // count=2
     expect(await limiter.check("1.1.1.1")).toBe(false); // over limit
@@ -44,19 +44,21 @@ describe("createLimiter — H3 (Retry-After)", () => {
   });
 
   it("P1-3: independent limiter instances do not share buckets", async () => {
-    const a = createLimiter(1, 60_000);
-    const b = createLimiter(1, 60_000);
+    // Different namespaces ensure Redis keys don't collide even with same
+    // (limit, windowMs) values — the fix for the admin-verify/startup-write
+    // collision where both used rl:30:60000:<ip>.
+    const a = createLimiter(1, 60_000, "limiter-a");
+    const b = createLimiter(1, 60_000, "limiter-b");
     expect(await a.check("shared-ip")).toBe(true);
     expect(await a.check("shared-ip")).toBe(false);
-    // Same IP, different limiter → own bucket.
+    // Same IP, different namespace → own bucket.
     expect(await b.check("shared-ip")).toBe(true);
   });
 
   it("P1-3: quotas survive a 'restart' (fresh factory, same backing store keys)", async () => {
-    // Namespace is derived from quota+window only when Upstash is configured;
-    // in-memory fallback namespaces per instance, so this documents the
-    // dev-mode limitation instead of asserting cross-instance behavior.
-    const a = createLimiter(1, 60_000);
+    // Namespace is included in the Redis key, so different namespaces produce
+    // different keys. In-memory fallback namespaces per instance regardless.
+    const a = createLimiter(1, 60_000, "test-restart");
     expect(await a.check("ip-a")).toBe(true);
     expect(await a.check("ip-a")).toBe(false);
   });

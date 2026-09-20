@@ -43,8 +43,19 @@ const MAX_MEMORY_IPS = 10_000;
  * Two limiters with different `(limit, windowMs)` arguments maintain independent
  * Redis key spaces and independent in-memory buckets, so they can coexist
  * (e.g. a strict 5/min submit limiter alongside a looser 100/min general limiter).
+ *
+ * @param limit - Max requests per window per IP.
+ * @param windowMs - Window duration in milliseconds.
+ * @param namespace - Stable identifier for this limiter's endpoint/route. Included
+ *   in the Redis key to prevent collisions when multiple limiters share the same
+ *   `(limit, windowMs)` values (e.g. admin verification vs. startup write both
+ *   using 30/60000). Use lowercase alphanumeric + hyphens (e.g. "submit", "admin-verify").
  */
-export function createLimiter(limit: number, windowMs: number): RateLimiter {
+export function createLimiter(
+  limit: number,
+  windowMs: number,
+  namespace: string,
+): RateLimiter {
   const memoryBuckets = new Map<string, MemoryBucket>();
 
   /**
@@ -77,10 +88,11 @@ export function createLimiter(limit: number, windowMs: number): RateLimiter {
   }
 
   /**
-   * Redis key namespace derived from the quota config so distinct limiters never
-   * collide. Only used when Redis is configured.
+   * Redis key namespace derived from the quota config and route namespace so
+   * distinct limiters never collide. Only used when Redis is configured.
+   * Format: rl:<namespace>:<limit>:<windowMs>
    */
-  const redisKeyPrefix = `rl:${limit}:${windowMs}`;
+  const redisKeyPrefix = `rl:${namespace}:${limit}:${windowMs}`;
 
   return {
     async check(ip: string): Promise<boolean> {

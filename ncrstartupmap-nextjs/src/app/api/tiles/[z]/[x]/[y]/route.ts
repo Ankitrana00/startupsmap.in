@@ -11,7 +11,7 @@ const OSM_TILE_URL = "https://tile.openstreetmap.org";
 const CACHE_DURATION = 60 * 60 * 24 * 90; // 90 days in seconds
 
 /** P1-5 (audit H3): generous per-IP quota for the proxy. */
-const limiter = createLimiter(300, 60 * 1000);
+const limiter = createLimiter(300, 60 * 1000, "tiles");
 
 export async function GET(
   request: NextRequest,

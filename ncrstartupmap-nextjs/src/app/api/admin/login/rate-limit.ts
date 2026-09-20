@@ -6,5 +6,5 @@ import { createLimiter } from "@/lib/limiters";
  * a dedicated instance so the admin quota never shares buckets with the
  * public flows (per-endpoint quotas are the factory's contract).
  */
-export const limiter = createLimiter(5, 15 * 60 * 1000);
+export const limiter = createLimiter(5, 15 * 60 * 1000, "admin-login");
 export const checkRateLimit = limiter.check;

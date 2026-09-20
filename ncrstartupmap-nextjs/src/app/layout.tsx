@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import Providers from "./providers";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PlausibleAnalytics />
           {children}
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
